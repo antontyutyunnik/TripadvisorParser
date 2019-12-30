@@ -1,3 +1,5 @@
+import lxml.html
+from lxml.cssselect import CSSSelector
 from bs4 import BeautifulSoup as bs
 from tqdm import tqdm as progress
 
@@ -17,10 +19,30 @@ class Cities_parser:
             })
         return list
 
+    def get_pagination(self, server, url):
 
-    def generate_pagination(self, url):
+        resp = server.get(url)
+        tree = lxml.html.fromstring(resp.text)
+        sel = CSSSelector('#SDTOPDESTCONTENT > div.deckTools.btm > div > div > :last-child')
+
+        pageNum = sel(tree)
+
+        if len(pageNum) != 0:
+            count_of_page = pageNum[0].get('data-page-number')
+        else:
+            count_of_page = 1
+
+        page_numbers = range(0, int(count_of_page), 1)
+        for page in page_numbers:
+            link_number = int(page) * 20
+
+        return link_number
+
+    def generate_pagination(self, get_pagination):
+
+        count = get_pagination
         urls = []
-        for i in progress(range(20, 7000, 20)):
+        for i in progress(range(20, count, 20)):
             url = 'https://www.tripadvisor.de/Restaurants-g187275-oa{}-Germany.html#LOCATION_LIST'.format(i)
             urls.append(url)
         return urls
@@ -47,6 +69,7 @@ class Cities_parser:
         url = 'https://www.tripadvisor.de/Restaurants-g187275-oa{page_num}-Germany.html#LOCATION_LIST'
         response = server.get(url)
         city_urls = self.get_urls_from_front_page(response)
-        pagination = self.generate_pagination(url)
+        get_pagination = self.get_pagination(server, url)
+        pagination = self.generate_pagination(get_pagination)
         city_urls.append(self.get_urls_from_pagination(server, pagination))
         return city_urls
