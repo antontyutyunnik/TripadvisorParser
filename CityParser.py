@@ -11,11 +11,13 @@ class Cities_parser:
 
         list = []
         base_url = 'https://www.tripadvisor.de'
+        parsed = 0
 
         for city in cities:
             link = city.find('a', href=True)['href']
             list.append({
                 'link': base_url + link,
+                'parsed': parsed
             })
         return list
 
@@ -49,9 +51,10 @@ class Cities_parser:
 
 
     def get_urls_from_pagination(self, server, pagination):
+        list = []
         for url in progress(pagination):
             base_url = 'https://www.tripadvisor.de'
-            list = []
+            parsed = 0
 
             response = server.get(url)
             response_in_lxml = bs(response.content, 'lxml')
@@ -62,14 +65,18 @@ class Cities_parser:
                     link = li.find('a', href=True)['href']
                     list.append({
                         'link': base_url + link,
+                        'parsed': parsed
                     })
         return list
+
+
 
     def get_city_urls(self, server):
         url = 'https://www.tripadvisor.de/Restaurants-g187275-oa{page_num}-Germany.html#LOCATION_LIST'
         response = server.get(url)
-        city_urls = self.get_urls_from_front_page(response)
+        city_urls_front = self.get_urls_from_front_page(response)
         get_pagination = self.get_pagination(server, url)
         pagination = self.generate_pagination(get_pagination)
-        city_urls.append(self.get_urls_from_pagination(server, pagination))
+        city_urls_pagination = self.get_urls_from_pagination(server, pagination)
+        city_urls = city_urls_front + city_urls_pagination
         return city_urls
