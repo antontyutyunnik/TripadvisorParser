@@ -33,20 +33,17 @@ class DB:
         self.add_cities_to_DB(city_urls, db)
 
 
-
-    def createTableRestaraunts(self):
-        db = sqlite3.connect('C:/SQLLiteDB/tripadvisor_db.db')
+    def get_all_cities_from_DB(self):
+        db = self.connect()
         cursor = db.cursor()
-        cursor.execute("DROP TABLE IF EXISTS restaurants")
-        sql = """
-                                CREATE TABLE restaurants(
-                                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,                     
-                                link VARCHAR(255),
-                                parsed BOOLEAN, 
-                                cityID INTEGER,
-                                FOREIGN KEY(cityID) REFERENCES Cities(id) ) 
-                                """
-        cursor.execute(sql)
+        cursor.execute("SELECT * FROM Cities")
+        rows = cursor.fetchall()
+
         cursor.close()
         db.commit()
         db.close()
+        return rows
+
+    # def write_restaurants(self, city_urls):
+    #     db = self.connect()
+    #     self.get_all_cities_from_DB(db)
