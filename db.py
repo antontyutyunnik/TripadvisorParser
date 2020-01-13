@@ -6,6 +6,11 @@ class DB:
         db = sqlite3.connect('C:/Users/sumyt/PycharmProjects/TripadvisorParser/tripadvisor.db')
         return db
 
+    def write_cities(self, city_urls):
+        db = self.connect()
+        self.createTableCities(db)
+        self.add_cities_to_DB(city_urls, db)
+
     def createTableCities(self, db):
         cursor = db.cursor()
         cursor.execute("DROP TABLE IF EXISTS Cities")
@@ -27,12 +32,6 @@ class DB:
         db.commit()
         db.close()
 
-    def write_cities(self, city_urls):
-        db = self.connect()
-        self.createTableCities(db)
-        self.add_cities_to_DB(city_urls, db)
-
-
     def get_all_cities_from_DB(self):
         db = self.connect()
         cursor = db.cursor()
@@ -44,6 +43,40 @@ class DB:
         db.close()
         return rows
 
-    # def write_restaurants(self, city_urls):
-    #     db = self.connect()
-    #     self.get_all_cities_from_DB(db)
+
+    def write_restaurants(self, rest_urls):
+        self.createTableRestaraunts()
+        db = self.connect()
+        cursor = db.cursor()
+        try:
+            for rest_url in rest_urls:
+                cursor.execute("INSERT INTO Restaurants(link, parsed, cityID) VALUES(:link, :parsed,  :cityID)", rest_url)
+            cursor.execute("UPDATE Cities SET parsed = 1 WHERE id = :cityID", rest_url)
+            cursor.close()
+            db.commit()
+            db.close()
+            print('Add restaurants from to DB')
+        except sqlite3.Error as e:
+            print(e)
+            db.rollback()
+            db.close()
+            print("Insert DB error")
+
+
+
+    def createTableRestaraunts(self):
+        db = self.connect()
+        cursor = db.cursor()
+        sql = """
+                                CREATE TABLE IF NOT EXISTS Restaurants(
+                                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,                     
+                                link VARCHAR(255),
+                                parsed BOOLEAN, 
+                                cityID INTEGER,
+                                FOREIGN KEY(cityID) REFERENCES cities(id) ) 
+                                """
+        cursor.execute(sql)
+        cursor.close()
+        db.commit()
+        db.close()
+
