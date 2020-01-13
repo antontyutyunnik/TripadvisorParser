@@ -76,19 +76,20 @@ class Restaurants_parser:
                 '#component_2 > div > div > div.restaurants-list-ListCell__cellWrapper--1htQm > div.'
                 'restaurants-list-ListCell__photoWrapper--1umtU > span > a > div')
 
-            foto_list = foto_sel(tree)
+            if foto_sel != 1:
+                href.append({'link': link, 'parsed': parsed, 'cityID': city_id})
+                return href
+            else:
+                foto_list = foto_sel(tree)
 
-            # if not foto_list:
-            #     href.append({'link': link, 'parsed': parsed, 'cityID': city_id})
-            # else:
-            for foto in foto_list:
-                a_elem = foto.getparent()
-                # href.append(base_url + a_elem.get('href'))
-                href.append({
-                    'link': base_url + a_elem.get('href'),
-                    'parsed': parsed,
-                    'cityID': city_id
-                })
+                for foto in foto_list:
+                    a_elem = foto.getparent()
+                    # href.append(base_url + a_elem.get('href'))
+                    href.append({
+                        'link': base_url + a_elem.get('href'),
+                        'parsed': parsed,
+                        'cityID': city_id
+                    })
 
         return href
 
