@@ -60,7 +60,7 @@ class Restaurants_parser:
 
     def get_urls(self, city, server):
         base_url = 'https://www.tripadvisor.de'
-        link = 'There are no restaurants in this city.'
+        link = 'Folse'
         href = []
         city_id = city[0]
         parsed = 0
@@ -76,20 +76,20 @@ class Restaurants_parser:
                 '#component_2 > div > div > div.restaurants-list-ListCell__cellWrapper--1htQm > div.'
                 'restaurants-list-ListCell__photoWrapper--1umtU > span > a > div')
 
-            if foto_sel != 1:
-                href.append({'link': link, 'parsed': parsed, 'cityID': city_id})
-                return href
-            else:
-                foto_list = foto_sel(tree)
+            foto_list = foto_sel(tree)
 
-                for foto in foto_list:
-                    a_elem = foto.getparent()
-                    # href.append(base_url + a_elem.get('href'))
-                    href.append({
-                        'link': base_url + a_elem.get('href'),
-                        'parsed': parsed,
-                        'cityID': city_id
-                    })
+            # if not foto_list:
+                # href.append({'link': link, 'parsed': parsed, 'cityID': city_id})
+                # return
+            # else:
+
+            for foto in foto_list:
+                a_elem = foto.getparent()
+                href.append({
+                    'link': base_url + a_elem.get('href'),
+                    'parsed': parsed,
+                    'cityID': city_id
+                })
 
         return href
 
