@@ -1,3 +1,4 @@
+
 from telnetlib import EC
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
@@ -9,6 +10,10 @@ from bs4 import BeautifulSoup as bs
 import json
 import re
 
+
+
+
+
 class Data_restaurants_parser:
 
     def get_unparsed_restaurants_url(self, restaurants):
@@ -19,7 +24,7 @@ class Data_restaurants_parser:
             id = rest[0]
             if parsed == 0:
                 if city_id == 5:
-                    # if id == 12055:
+                    # if id == 12081:
                     list.append(rest)
         return list
 
@@ -117,16 +122,6 @@ class Data_restaurants_parser:
         if_postalcode = restaurant_data['address_obj']['postalcode']
         return if_postalcode
 
-    def get_work_time(self, restaurant_data):
-        work_hours = []
-        work_time = restaurant_data.get('display_hours')
-        if_work_time = self.if_exists(work_time)
-        for days in if_work_time:
-            day = days.get('days')
-            times = days.get('times')
-            work_hours.append({'day': day, 'times': times})
-        return work_hours
-
     def get_description(self, restaurant_data):
         description = restaurant_data.get('description')
         self.if_exists(description)
@@ -144,7 +139,8 @@ class Data_restaurants_parser:
         for cuisine in cuisines:
             name = cuisine.get('name')
             cuisine_name.append(name)
-        return cuisine_name
+        str_cuisine_name = ', '.join(cuisine_name)
+        return str_cuisine_name
 
     def get_photos(self, server, url):
         response = server.get(url)
@@ -153,16 +149,133 @@ class Data_restaurants_parser:
         for photo in photos:
             img = photo.find('img')
 
+    def string_to_json(self, s):
+        return json.loads(s)
 
+    def get_day_number(self, day):
+        weeks_day = {
+            "Mo": 1,
+            "Di": 2,
+            "Mi": 3,
+            "Do": 4,
+            "Fr": 5,
+            "Sa": 6,
+            "So": 7,
+        }
+        return weeks_day[day]
+
+    def parse_time(self, day, time):
+        if len(time) > 1:
+            period_left = time[0][:13]
+            period_right = time[0][-13:]
+
+            period_left_from = period_left[:5]
+            period_left_to = period_left[-5:]
+
+            period_right_from = period_right[:5]
+            period_right_to = period_right[-5:]
+
+            day_info = [day, period_left_from, period_left_to, period_right_from, period_right_to]
+
+            return day_info
+
+
+        elif len(time) == 1:
+            period_left_from = time[0][:5]
+            period_right_to = time[0][-5:]
+            from_2 = ''
+            to_2 = ''
+
+            day_info = [day, period_left_from, period_right_to, from_2, to_2]
+
+            return day_info
+
+    def get_working_list_from_json(self, display_hours):
+        days_list = []
+        for period in display_hours:
+            day = period['days']
+            time = period['times']
+
+            if '-' in day:
+                firs_day = day[:2]
+                last_day = day[-2:]
+
+                firs_day_numb = self.get_day_number(firs_day)
+                last_day_numb = self.get_day_number(last_day)
+                # if Sa - So
+                if firs_day_numb - last_day_numb > 0:
+                    days_range_1 = range(1, last_day_numb + 1, 1)
+                    dyys_range_2 = range(firs_day_numb, 7 + 1, 1)
+
+                    for day_numb in days_range_1:
+                        day = self.get_key_from_value(day_numb)
+                        days_list.append(self.parse_time(day, time))
+
+                    for day_numb in dyys_range_2:
+                        day = self.get_key_from_value(day_numb)
+                        days_list.append(self.parse_time(day, time))
+                else:
+                    days_range = range(firs_day_numb, last_day_numb + 1, 1)
+
+                    for day_numb in days_range:
+                        day = self.get_key_from_value(day_numb)
+                        days_list.append(self.parse_time(day, time))
+
+            elif '-' not in day:
+                days_list.append(self.parse_time(day, time))
+
+        return days_list
+
+    def get_key_from_value(self, day_numb):
+        weeks_day = {
+            "Mo": 1,
+            "Di": 2,
+            "Mi": 3,
+            "Do": 4,
+            "Fr": 5,
+            "Sa": 6,
+            "So": 7,
+        }
+        return list(weeks_day.keys())[list(weeks_day.values()).index(day_numb)]
+
+    def get_work_time(self, server, record):
+        restaurantID = record[0]
+        data_list = []
+        url = record[1]
+        json_string = self.get_page_json(server, url)
+        obj = json.loads(json_string)
+        restaurant_id = self.get_id_from_url(url)
+        restaurant_data = obj['pageManifest']['redux']['api']['responses']['/data/1.0/location/' + restaurant_id]['data']
+        display_hours = restaurant_data['display_hours']
+        if display_hours == None:
+            return
+        else:
+            work_hours = self.get_working_list_from_json(display_hours)
+            for hours in work_hours:
+                day = hours[0]
+                from_1 = hours[1]
+                to_1 = hours[2]
+                from_2 = hours[3]
+                to_2 = hours[4]
+                data_list.append({'restaurantID': restaurantID,
+                                  'weekday': day,
+                                  'from_1': from_1,
+                                  'to_1': to_1,
+                                  'from_2': from_2,
+                                  'to_2': to_2})
+        return data_list
 
     def get_dict_from_restaurant_record(self, server, record):
-        data = []
+        data_list = []
+        photo_parsed = 0
+        restaurantID = record[0]
         url = record[1]
         # photos = self.get_photos(server, url)
         json_string = self.get_page_json(server, url)
         obj = json.loads(json_string)
         restaurant_id = self.get_id_from_url(url)
         restaurant_data = obj['pageManifest']['redux']['api']['responses']['/data/1.0/location/' + restaurant_id]['data']
+        display_hours = restaurant_data['display_hours']
         rest_name = restaurant_data['name']
         latitude = self.get_latitude(restaurant_data)
         longitude = self.get_longitude(restaurant_data)
@@ -171,31 +284,30 @@ class Data_restaurants_parser:
         phone = self.get_phone(restaurant_data)
         website = self.get_website(restaurant_data)
         email = self.get_email(restaurant_data)
-        # address = self.get_address(restaurant_data)
         street = self.get_street(restaurant_data)
         city = self.get_city(restaurant_data)
         state = self.get_state(restaurant_data)
         country = self.get_country(restaurant_data)
         postalcode = self.get_postalcode(restaurant_data)
-        work_hours = self.get_work_time(restaurant_data)
         description = self.get_description(restaurant_data)
         price_level = self.get_price_level(restaurant_data)
         cuisine = self.get_cuisine(restaurant_data)
 
-        data.append({'rest_name': rest_name,
-                     'latitude_and_longitude': latitude_and_longitude,
-                     'timezone': timezone,
-                     'phone': phone,
-                     'website': website,
-                     'email': email,
-                     'street': street,
-                     'city': city,
-                     'state': state,
-                     'country': country,
-                     'postalcode': postalcode,
-                     'work_hours': work_hours,
-                     'description': description,
-                     'price_level': price_level,
-                     'cuisine': cuisine})
-        return data
+        data_list.append({'restName': rest_name,
+                          'latitudeAndLongitude': latitude_and_longitude,
+                          'timeZone': timezone,
+                          'restaurantID': restaurantID,
+                          'phone': phone,
+                          'website': website,
+                          'email': email,
+                          'street': street,
+                          'city': city,
+                          'state': state,
+                          'country': country,
+                          'postaLcode': postalcode,
+                          'description': description,
+                          'priceLevel': price_level,
+                          'cuisine': cuisine,
+                          'photoParsed': photo_parsed})
+        return data_list
 

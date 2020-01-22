@@ -15,8 +15,11 @@ class Cities_parser:
 
         for city in cities:
             link = city.find('a', href=True)['href']
+            city_name = city.find('a').text
+            city_name = city_name.replace('Restaurants ', '')
             list.append({
                 'link': base_url + link,
+                'city_name': city_name,
                 'parsed': parsed
             })
         return list
@@ -63,8 +66,11 @@ class Cities_parser:
             for city in cities:
                 for li in city.find_all('li'):
                     link = li.find('a', href=True)['href']
+                    city_name = li.find('a').text
+                    city_name = city_name.replace('Restaurants ', '')
                     list.append({
                         'link': base_url + link,
+                        'city_name': city_name,
                         'parsed': parsed
                     })
         return list

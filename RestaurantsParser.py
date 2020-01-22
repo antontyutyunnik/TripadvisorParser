@@ -14,7 +14,7 @@ class Restaurants_parser:
 
         list = []
         for city in cities:
-            parsed = city[2]
+            parsed = city[3]
             if parsed == 0:
                 list.append(city)
         return list
