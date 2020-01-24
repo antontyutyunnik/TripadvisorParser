@@ -22,6 +22,7 @@ if __name__ == '__main__':
     cities = db.get_all_cities_from_DB()
     rest_parser = Restaurants_parser()
     unparsed_cities = rest_parser.get_unparsed_cities_url(cities)
+
     for city in tqdm.tqdm(unparsed_cities):
         rest_urls = rest_parser.get_urls(city, server)
         rest_write = db.write_restaurants(rest_urls)

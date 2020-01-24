@@ -15,7 +15,9 @@ class Restaurants_parser:
         list = []
         for city in cities:
             parsed = city[3]
+            id = city[0]
             if parsed == 0:
+                # if id == 6788:
                 list.append(city)
         return list
 
@@ -74,17 +76,13 @@ class Restaurants_parser:
 
             foto_sel = CSSSelector(
                 '#component_2 > div > div > div.restaurants-list-ListCell__cellWrapper--1htQm > div.'
-                'restaurants-list-ListCell__photoWrapper--1umtU > span > a > div')
+                'restaurants-list-ListCell__photoWrapper--1umtU > span > a')
 
             foto_list = foto_sel(tree)
 
-            # if not foto_list:
-                # href.append({'link': link, 'parsed': parsed, 'cityID': city_id})
-                # return
-            # else:
 
             for foto in foto_list:
-                a_elem = foto.getparent()
+                a_elem = foto
                 href.append({
                     'link': base_url + a_elem.get('href'),
                     'parsed': parsed,
