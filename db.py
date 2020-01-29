@@ -106,13 +106,13 @@ class DB:
             return
         try:
             for rest in rest_dict:
-                cursor.execute("INSERT INTO DataRestaurants(restName, latitudeAndLongitude, timeZone, restaurantID, phone,"
+                cursor.execute("INSERT INTO DataRestaurants(restName, latitude, longitude, timeZone, restaurantID, phone,"
                                "website, email, street, city, state, country, postaLcode, description, priceLevel,"
-                               "cuisine, photoParsed) VALUES(:restName, :latitudeAndLongitude, :timeZone, :restaurantID, :phone,"
+                               "cuisine, photoParsed) VALUES(:restName, :latitude, :longitude, :timeZone, :restaurantID, :phone,"
                                ":website, :email, :street, :city, :state, :country, :postaLcode, :description,"
                                ":priceLevel, :cuisine, :photoParsed)",
                                rest)
-            cursor.execute("UPDATE Restaurants SET parsed = 1 WHERE id = :cityID", rest)
+            cursor.execute("UPDATE Restaurants SET parsed = 1 WHERE id = :restaurantID", rest)
             cursor.close()
             db.commit()
             db.close()
@@ -122,6 +122,7 @@ class DB:
             db.rollback()
             db.close()
             print("Insert DB error")
+            pass
 
 
     def createTableDataRestaraunts(self):
@@ -132,7 +133,8 @@ class DB:
                                 id                     INTEGER       PRIMARY KEY AUTOINCREMENT
                                                                      NOT NULL,
                                 restName               VARCHAR (255),
-                                latitudeAndLongitude   VARCHAR (255),
+                                latitude               VARCHAR (255),
+                                longitude              VARCHAR (255),
                                 timeZone               VARCHAR,
                                 restaurantID           INTEGER       REFERENCES Restaurants (cityID),
                                 phone                  VARCHAR (255),
@@ -168,7 +170,7 @@ class DB:
             cursor.close()
             db.commit()
             db.close()
-            print('Add restaurants from to DB')
+            print('Add WORK_TIME from to DB')
         except sqlite3.Error as e:
             print(e)
             db.rollback()

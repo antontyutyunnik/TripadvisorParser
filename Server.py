@@ -11,7 +11,11 @@ class Server:
         try:
            response = self.session.get(url, headers=self.headers)
            if response.status_code == 200:
-            return response
+               return response
+           elif response.status_code != 200:
+               response_repeat = self.session.get(url, headers=self.headers)
+               if response_repeat.status_code == 200:
+                   return response_repeat
            else:
                sys.exit("Error message. Response code not 200")
         except Exception as e:

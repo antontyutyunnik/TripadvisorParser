@@ -1,34 +1,315 @@
-
-from telnetlib import EC
-from selenium.webdriver.common.keys import Keys
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+import tqdm
 from bs4 import BeautifulSoup as bs
 import json
 import re
-
-
-
+from db import DB
 
 
 class Data_restaurants_parser:
 
+    def get_city_id_from_list(self):
+        cities = ['Aachen'
+            , 'Ahaus'
+            , 'Ahlen'
+            , 'Alfter'
+            , 'Alsdorf'
+            , 'Altena'
+            , 'Arnsberg'
+            , 'Ascheberg'
+            , 'Attendorn'
+            , 'Bad Berleburg'
+            , 'Bad Driburg'
+            , 'Bad Honnef'
+            , 'Bad Lippspringe'
+            , 'Bad Münstereifel'
+            , 'Bad Oeynhausen'
+            , 'Bad Salzuflen'
+            , 'Baesweiler'
+            , 'Beckum'
+            , 'Bedburg'
+            , 'Bergheim'
+            , 'Bergisch Gladbach'
+            , 'Bergkamen'
+            , 'Bergneustadt'
+            , 'Bielefeld'
+            , 'Blomberg'
+            , 'Bocholt'
+            , 'Bochum'
+            , 'Bönen'
+            , 'Bonn'
+            , 'Borken'
+            , 'Bornheim'
+            , 'Bottrop'
+            , 'Brakel'
+            , 'Brilon'
+            , 'Brüggen'
+            , 'Brühl'
+            , 'Bünde'
+            , 'Burbach'
+            , 'Büren'
+            , 'Burscheid'
+            , 'Castrop - Rauxel'
+            , 'Coesfeld'
+            , 'Datteln'
+            , 'Delbrück'
+            , 'Detmold'
+            , 'Dinslaken'
+            , 'Dormagen'
+            , 'Dorsten'
+            , 'Dortmund'
+            , 'Drensteinfurt'
+            , 'Duisburg'
+            , 'Dülmen'
+            , 'Düren'
+            , 'Düsseldorf'
+            , 'Eitorf'
+            , 'Elsdorf'
+            , 'Emmerich am Rhein'
+            , 'Emsdetten'
+            , 'Engelskirchen'
+            , 'Enger'
+            , 'Ennepetal'
+            , 'Ennigerloh'
+            , 'Erftstadt'
+            , 'Erkelenz'
+            , 'Erkrath'
+            , 'Erwitte'
+            , 'Eschweiler'
+            , 'Espelkamp'
+            , 'Essen'
+            , 'Euskirchen'
+            , 'Finnentrop'
+            , 'Frechen'
+            , 'Freudenberg'
+            , 'Fröndenberg / Ruhr'
+            , 'Geilenkirchen'
+            , 'Geldern'
+            , 'Gelsenkirchen'
+            , 'Gescher'
+            , 'Geseke'
+            , 'Gevelsberg'
+            , 'Gladbeck'
+            , 'Goch'
+            , 'Grefrath'
+            , 'Greven'
+            , 'Grevenbroich'
+            , 'Gronau(Westf.)'
+            , 'Gummersbach'
+            , 'Gütersloh'
+            , 'Haan'
+            , 'Hagen'
+            , 'Halle(Westf.)'
+            , 'Haltern am See'
+            , 'Halver'
+            , 'Hamm'
+            , 'Hamminkeln'
+            , 'Harsewinkel'
+            , 'Hattingen'
+            , 'Heiligenhaus'
+            , 'Heinsberg'
+            , 'Hemer'
+            , 'Hennef(Sieg)'
+            , 'Herdecke'
+            , 'Herford'
+            , 'Herne'
+            , 'Herten'
+            , 'Herzebrock - Clarholz'
+            , 'Herzogenrath'
+            , 'Hiddenhausen'
+            , 'Hilchenbach'
+            , 'Hilden'
+            , 'Hille'
+            , 'Holzwickede'
+            , 'Horn - Bad Meinberg'
+            , 'Hörstel'
+            , 'Hövelhof'
+            , 'Höxter'
+            , 'Hückelhoven'
+            , 'Hückeswagen'
+            , 'Hürth'
+            , 'Ibbenbüren'
+            , 'Iserlohn'
+            , 'Jüchen'
+            , 'Jülich'
+            , 'Kaarst'
+            , 'Kamen'
+            , 'Kamp - Lintfort'
+            , 'Kempen'
+            , 'Kerpen'
+            , 'Kevelaer'
+            , 'Kierspe'
+            , 'Kirchlengern'
+            , 'Kleve'
+            , 'Köln'
+            , 'Königswinter'
+            , 'Korschenbroich'
+            , 'Krefeld'
+            , 'Kreuzau'
+            , 'Kreuztal'
+            , 'Kürten'
+            , 'Lage'
+            , 'Langenfeld(Rheinland)'
+            , 'Leichlingen(Rheinland)'
+            , 'Lemgo'
+            , 'Lengerich'
+            , 'Lennestadt'
+            , 'Leopoldshöhe'
+            , 'Leverkusen'
+            , 'Lindlar'
+            , 'Lippstadt'
+            , 'Lohmar'
+            , 'Löhne'
+            , 'Lübbecke'
+            , 'Lüdenscheid'
+            , 'Lüdinghausen'
+            , 'Lünen'
+            , 'Marl'
+            , 'Marsberg'
+            , 'Mechernich'
+            , 'Meckenheim'
+            , 'Meerbusch'
+            , 'Meinerzhagen'
+            , 'Menden(Sauerland)'
+            , 'Meschede'
+            , 'Mettmann'
+            , 'Minden'
+            , 'Moers'
+            , 'Mönchengladbach'
+            , 'Monheim am Rhein'
+            , 'Mülheim an der Ruhr'
+            , 'Münster'
+            , 'Netphen'
+            , 'Nettetal'
+            , 'Neukirchen - Vluyn'
+            , 'Neunkirchen - Seelscheid'
+            , 'Neuss'
+            , 'Niederkassel'
+            , 'Niederkrüchten'
+            , 'Nottuln'
+            , 'Nümbrecht'
+            , 'Oberhausen'
+            , 'Ochtrup'
+            , 'Odenthal'
+            , 'Oelde'
+            , 'Oer - Erkenschwick'
+            , 'Oerlinghausen'
+            , 'Olpe'
+            , 'Olsberg'
+            , 'Overath'
+            , 'Paderborn'
+            , 'Petershagen'
+            , 'Plettenberg'
+            , 'Porta Westfalica'
+            , 'Pulheim'
+            , 'Radevormwald'
+            , 'Rahden'
+            , 'Ratingen'
+            , 'Recklinghausen'
+            , 'Rees'
+            , 'Reichshof'
+            , 'Reken'
+            , 'Remscheid'
+            , 'Rheda - Wiedenbrück'
+            , 'Rhede'
+            , 'Rheinbach'
+            , 'Rheinberg'
+            , 'Rheine'
+            , 'Rietberg'
+            , 'Rösrath'
+            , 'Salzkotten'
+            , 'Sankt Augustin'
+            , 'Schloß Holte - Stukenbrock'
+            , 'Schmallenberg'
+            , 'Schwalmtal'
+            , 'Schwelm'
+            , 'Schwerte'
+            , 'Selm'
+            , 'Senden'
+            , 'Siegburg'
+            , 'Siegen'
+            , 'Simmerath'
+            , 'Soest'
+            , 'Solingen'
+            , 'Spenge'
+            , 'Sprockhövel'
+            , 'Stadtlohn'
+            , 'Steinfurt'
+            , 'Steinhagen'
+            , 'Stolberg(Rhld.)'
+            , 'Straelen'
+            , 'Sundern(Sauerland)'
+            , 'Swisttal'
+            , 'Telgte'
+            , 'Tönisvorst'
+            , 'Troisdorf'
+            , 'Übach - Palenberg'
+            , 'Unna'
+            , 'Velbert'
+            , 'Verl'
+            , 'Versmold'
+            , 'Viersen'
+            , 'Vlotho'
+            , 'Voerde(Niederrhein)'
+            , 'Vreden'
+            , 'Wachtberg'
+            , 'Waldbröl'
+            , 'Waltrop'
+            , 'Warburg'
+            , 'Warendorf'
+            , 'Warstein'
+            , 'Wassenberg'
+            , 'Wegberg'
+            , 'Weilerswist'
+            , 'Wenden'
+            , 'Werdohl'
+            , 'Werl'
+            , 'Wermelskirchen'
+            , 'Werne'
+            , 'Wesel'
+            , 'Wesseling'
+            , 'Wetter(Ruhr)'
+            , 'Wiehl'
+            , 'Willich'
+            , 'Wilnsdorf'
+            , 'Windeck'
+            , 'Wipperfürth'
+            , 'Witten'
+            , 'Wülfrath'
+            , 'Wuppertal'
+            , 'Würselen'
+            , 'Xanten'
+            , 'Zülpich'
+
+                  ]
+        db = DB()
+        list = []
+        rest_from_db = db.get_all_cities_from_DB()
+        for rest in tqdm.tqdm(rest_from_db):
+            name = rest[2]
+            id = rest[0]
+            for city in cities:
+                if name != city:
+                    continue
+                if name == city:
+                    list.append(id)
+        return list
+
     def get_unparsed_restaurants_url(self, restaurants):
         list = []
-        for rest in restaurants:
-            parsed = rest[2]
-            city_id = rest[3]
-            id = rest[0]
-            if parsed == 0:
-                if city_id == 5:
-                    # if id == 12081:
-                    list.append(rest)
+        id_list = self.get_city_id_from_list()
+        for id_from_list in tqdm.tqdm(id_list):
+            for rest in restaurants:
+                parsed = rest[2]
+                id_from_db = rest[3]
+                if parsed == 0:
+                    if id_from_list == id_from_db:
+                    # if city_id == 1:
+                    #     if id == 162:
+                        list.append(rest)
         return list
 
     def get_page_json(self, server, restaurant_link):
+        url_de = 'https://www.tripadvisor.de'
         request = server.get(restaurant_link)
         server_response_in_html = bs(request.content, 'lxml')
         script_tags = server_response_in_html.body.find_all('script')
@@ -39,7 +320,13 @@ class Data_restaurants_parser:
                 cut_string = ";(window.$WP=window.$WP||[]).push({id:'@ta/features',e:['@ta/features/bootstrap']," \
                              "m:{'@ta/features/bootstrap':function(m){m.exports=__WEB_CONTEXT__.pageManifest.features;}}});"
                 json = json.replace(cut_string, '')
-                return json
+                cities = server_response_in_html.find_all('link', href=True)
+                for city in cities:
+                    link = city['href']
+                    x = link.find(url_de)
+                    if x == 0:
+                        return json, link
+                # return json
 
     def get_id_from_url(self, url):
         regex = r"[d]\d*[-]"
@@ -96,30 +383,40 @@ class Data_restaurants_parser:
         street = restaurant_data.get('address_obj')
         self.if_exists(street)
         street1 = restaurant_data['address_obj']['street1']
+        if street1 is None:
+            return ''
         return street1
 
     def get_city(self, restaurant_data):
         city = restaurant_data.get('address_obj')
         self.if_exists(city)
         if_city = restaurant_data['address_obj']['city']
+        if if_city is None:
+            return ''
         return if_city
 
     def get_state(self, restaurant_data):
         state = restaurant_data.get('address_obj')
         self.if_exists(state)
         if_state = restaurant_data['address_obj']['state']
+        if if_state is None:
+            return ''
         return if_state
 
     def get_country(self, restaurant_data):
         country = restaurant_data.get('address_obj')
         self.if_exists(country)
         if_country = restaurant_data['address_obj']['country']
+        if if_country is None:
+            return ''
         return if_country
 
     def get_postalcode(self, restaurant_data):
         postalcode = restaurant_data.get('address_obj')
         self.if_exists(postalcode)
         if_postalcode = restaurant_data['address_obj']['postalcode']
+        if if_postalcode is None:
+            return ''
         return if_postalcode
 
     def get_description(self, restaurant_data):
@@ -167,7 +464,7 @@ class Data_restaurants_parser:
     def parse_time(self, day, time):
         if len(time) > 1:
             period_left = time[0][:13]
-            period_right = time[0][-13:]
+            period_right = time[1][-13:]
 
             period_left_from = period_left[:5]
             period_left_to = period_left[-5:]
@@ -238,15 +535,9 @@ class Data_restaurants_parser:
         }
         return list(weeks_day.keys())[list(weeks_day.values()).index(day_numb)]
 
-    def get_work_time(self, server, record):
+    def get_work_time(self, record, display_hours):
         restaurantID = record[0]
         data_list = []
-        url = record[1]
-        json_string = self.get_page_json(server, url)
-        obj = json.loads(json_string)
-        restaurant_id = self.get_id_from_url(url)
-        restaurant_data = obj['pageManifest']['redux']['api']['responses']['/data/1.0/location/' + restaurant_id]['data']
-        display_hours = restaurant_data['display_hours']
         if display_hours == None:
             return
         else:
@@ -265,21 +556,37 @@ class Data_restaurants_parser:
                                   'to_2': to_2})
         return data_list
 
+    def get_url_from_pages(self, server, url):
+        list = []
+        url_de ='https://www.tripadvisor.de'
+        response = server.get(url)
+        response_in_lxml = bs(response.content, 'lxml')
+
+        cities = response_in_lxml.find_all('link', href=True)
+        for city in cities:
+            link = city['href']
+            x = link.find(url_de)
+            if x == 0:
+                return link
+
+
     def get_dict_from_restaurant_record(self, server, record):
         data_list = []
         photo_parsed = 0
         restaurantID = record[0]
         url = record[1]
         # photos = self.get_photos(server, url)
-        json_string = self.get_page_json(server, url)
+        json_string, link = self.get_page_json(server, url)
         obj = json.loads(json_string)
-        restaurant_id = self.get_id_from_url(url)
+        # restaurant_parsed_id = self.get_url_from_pages(server, url)
+        restaurant_id = self.get_id_from_url(link)
         restaurant_data = obj['pageManifest']['redux']['api']['responses']['/data/1.0/location/' + restaurant_id]['data']
         display_hours = restaurant_data['display_hours']
+        work_time = self.get_work_time(record, display_hours)
         rest_name = restaurant_data['name']
         latitude = self.get_latitude(restaurant_data)
         longitude = self.get_longitude(restaurant_data)
-        latitude_and_longitude = latitude + ',' + longitude
+        # latitude_and_longitude = latitude + ',' + longitude
         timezone = self.get_timezone(restaurant_data)
         phone = self.get_phone(restaurant_data)
         website = self.get_website(restaurant_data)
@@ -294,7 +601,8 @@ class Data_restaurants_parser:
         cuisine = self.get_cuisine(restaurant_data)
 
         data_list.append({'restName': rest_name,
-                          'latitudeAndLongitude': latitude_and_longitude,
+                          'latitude': latitude,
+                          'longitude': longitude,
                           'timeZone': timezone,
                           'restaurantID': restaurantID,
                           'phone': phone,
@@ -309,5 +617,5 @@ class Data_restaurants_parser:
                           'priceLevel': price_level,
                           'cuisine': cuisine,
                           'photoParsed': photo_parsed})
-        return data_list
+        return data_list, work_time
 
