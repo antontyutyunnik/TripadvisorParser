@@ -34,3 +34,31 @@ class Server:
             print(e)
             sys.exit("Error message")
 
+    def post(self, url):
+        try:
+           response = self.session.post(url, headers=self.headers)
+           if response.status_code == 200:
+               return response
+           elif response.status_code != 200:
+               response_repeat = self.session.post(url, headers=self.headers)
+               if response_repeat.status_code == 200:
+                   return response_repeat
+           else:
+               sys.exit("Error message. Response code not 200")
+        except Exception as e:
+            print(e)
+            sys.exit("Error message")
+        except requests.exceptions.Timeout as e:
+            #Maybe set up for a retry, or continue in a retry loop
+            print(e)
+            sys.exit("Error message")
+        except requests.exceptions.TooManyRedirects as e:
+            # Tell the user their URL was bad and try a different one
+            print(e)
+            sys.exit("Error message")
+        except requests.exceptions.RequestException as e:
+            # catastrophic error. bail.
+            print(e)
+            sys.exit("Error message")
+        pass
+

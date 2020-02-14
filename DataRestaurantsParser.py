@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup as bs
 import json
 import re
 from db import DB
+from Server import *
 
 
 class Data_restaurants_parser:
@@ -303,8 +304,8 @@ class Data_restaurants_parser:
                 id_from_db = rest[3]
                 if parsed == 0:
                     if id_from_list == id_from_db:
-                    # if city_id == 1:
-                    #     if id == 162:
+                        # if id_from_db > 285:
+                        # if id == 162:
                         list.append(rest)
         return list
 
@@ -570,23 +571,24 @@ class Data_restaurants_parser:
                 return link
 
 
-    def get_dict_from_restaurant_record(self, server, record):
+    def get_dict_from_restaurant_record(self, record):
+        server = Server()
         data_list = []
         photo_parsed = 0
         restaurantID = record[0]
         url = record[1]
+        deutschland = 'Deutschland'
         # photos = self.get_photos(server, url)
         json_string, link = self.get_page_json(server, url)
         obj = json.loads(json_string)
-        # restaurant_parsed_id = self.get_url_from_pages(server, url)
-        restaurant_id = self.get_id_from_url(link)
+        restaurant_parsed_id = self.get_url_from_pages(server, url)
+        restaurant_id = self.get_id_from_url(restaurant_parsed_id)
         restaurant_data = obj['pageManifest']['redux']['api']['responses']['/data/1.0/location/' + restaurant_id]['data']
         display_hours = restaurant_data['display_hours']
         work_time = self.get_work_time(record, display_hours)
         rest_name = restaurant_data['name']
         latitude = self.get_latitude(restaurant_data)
         longitude = self.get_longitude(restaurant_data)
-        # latitude_and_longitude = latitude + ',' + longitude
         timezone = self.get_timezone(restaurant_data)
         phone = self.get_phone(restaurant_data)
         website = self.get_website(restaurant_data)
@@ -599,23 +601,25 @@ class Data_restaurants_parser:
         description = self.get_description(restaurant_data)
         price_level = self.get_price_level(restaurant_data)
         cuisine = self.get_cuisine(restaurant_data)
+        if country == deutschland:
+            data_list.append({'restName': rest_name,
+                              'latitude': latitude,
+                              'longitude': longitude,
+                              'timeZone': timezone,
+                              'restaurantID': restaurantID,
+                              'phone': phone,
+                              'website': website,
+                              'email': email,
+                              'street': street,
+                              'city': city,
+                              'state': state,
+                              'country': country,
+                              'postaLcode': postalcode,
+                              'description': description,
+                              'priceLevel': price_level,
+                              'cuisine': cuisine,
+                              'photoParsed': photo_parsed})
+        else:
+            pass
 
-        data_list.append({'restName': rest_name,
-                          'latitude': latitude,
-                          'longitude': longitude,
-                          'timeZone': timezone,
-                          'restaurantID': restaurantID,
-                          'phone': phone,
-                          'website': website,
-                          'email': email,
-                          'street': street,
-                          'city': city,
-                          'state': state,
-                          'country': country,
-                          'postaLcode': postalcode,
-                          'description': description,
-                          'priceLevel': price_level,
-                          'cuisine': cuisine,
-                          'photoParsed': photo_parsed})
         return data_list, work_time
-

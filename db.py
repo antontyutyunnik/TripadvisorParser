@@ -34,6 +34,7 @@ class DB:
         db.commit()
         db.close()
 
+
     def get_all_cities_from_DB(self):
         db = self.connect()
         cursor = db.cursor()
@@ -54,8 +55,9 @@ class DB:
             return
         try:
             for rest_url in rest_urls:
-                cursor.execute("INSERT INTO Restaurants(link, parsed, cityID) VALUES(:link, :parsed,  :cityID)", rest_url)
-            cursor.execute("UPDATE Cities SET parsed = 1 WHERE id = :cityID", rest_url)
+                for url in rest_url:
+                    cursor.execute("INSERT INTO Restaurants(link, parsed, cityID) VALUES(:link, :parsed,  :cityID)", url)
+            cursor.execute("UPDATE Cities SET parsed = 1 WHERE id = :cityID", url)
             cursor.close()
             db.commit()
             db.close()
@@ -88,7 +90,7 @@ class DB:
     def get_all_restaurants_from_DB(self):
         db = self.connect()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM Restaurants")
+        cursor.execute("SELECT * FROM Restaurants WHERE parsed = 1")
         rows = cursor.fetchall()
 
         cursor.close()
@@ -123,6 +125,18 @@ class DB:
             db.close()
             print("Insert DB error")
             pass
+
+
+    def get_all_data_restaurants_from_DB(self):
+        db = self.connect()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM DataRestaurants")
+        rows = cursor.fetchall()
+
+        cursor.close()
+        db.commit()
+        db.close()
+        return rows
 
 
     def createTableDataRestaraunts(self):
@@ -200,6 +214,18 @@ class DB:
         db.close()
 
 
+    def get_all_workhours_restaurants_from_DB(self):
+        db = self.connect()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM Workhours")
+        rows = cursor.fetchall()
+
+        cursor.close()
+        db.commit()
+        db.close()
+        return rows
+
+
     def createTableFoto(self):
         db = self.connect()
         cursor = db.cursor()
@@ -215,3 +241,39 @@ class DB:
         cursor.close()
         db.commit()
         db.close()
+
+    def is_many_rows(self, rows):
+        if len(rows) > 1:
+            print("Error" + id + "Restorants has many IDs")
+            return
+
+
+    def getAddressByRestaurant(self, restaurant, connection):
+        id = restaurant[0]
+
+        cursor = connection.cursor()
+        rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+        self.is_many_rows(rows)
+        cursor.close()
+
+        return rows[0][9]
+
+    def getPhoneByRestaurant(self, restaurant, connection):
+        id = restaurant[0]
+
+        cursor = connection.cursor()
+        rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+        self.is_many_rows(rows)
+        cursor.close()
+
+        return rows[0][6]
+
+    def getPostalCodeByRestaurant(self, restaurant, connection):
+        id = restaurant[0]
+
+        cursor = connection.cursor()
+        rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+        self.is_many_rows(rows)
+        cursor.close()
+
+        return rows[0][13]

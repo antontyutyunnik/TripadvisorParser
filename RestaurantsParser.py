@@ -1,12 +1,11 @@
 import re
-
+from db import *
+from Server import *
 import lxml.html
 import tqdm
 from lxml.cssselect import CSSSelector
-from bs4 import BeautifulSoup as bs
-from tqdm import tqdm as progress
-from lxml.html.clean import Cleaner
-
+from multiprocessing import Pool
+from functools import partial
 
 class Restaurants_parser:
 
@@ -17,7 +16,7 @@ class Restaurants_parser:
             parsed = city[3]
             id = city[0]
             if parsed == 0:
-                # if id == 6788:
+                # if id == 1:
                 list.append(city)
         return list
 
@@ -47,53 +46,54 @@ class Restaurants_parser:
         return list
 
     def remove_marketing(self, tree):
-        marketing_sel = CSSSelector('#component_2 > div > div:nth-child(1) > div.restaurants-list-ListCell__cellWrapper'
-                                    '--1htQm > div.restaurants-list-ListCell__infoWrapper--3agHz > div.restaurants-list'
-                                    '-ListCell__titleRow--3rRCX.ui_columns.is-gapless.is-mobile.is-multiline > div:nth'
-                                    '-child(1) > div > div > div')
+        marketing_sel = CSSSelector('#component_2 > div > div> span > div._1kNOY9zw > div._2Q7zqOgW > div._2kbTRHSI > div._1j22fice > div > div')
         marketing = marketing_sel(tree)
 
         for elem in marketing:
-            child = elem.getparent().getparent().getparent().getparent().getparent().getparent()
+            child = elem.getparent().getparent().getparent().getparent().getparent()
             parent = child.getparent()
             parent.remove(child)
 
         return tree
 
-    def get_urls(self, city, server):
+    def get_urls(self,city_id, page):
+        server = Server()
         base_url = 'https://www.tripadvisor.de'
         link = 'Folse'
         href = []
-        city_id = city[0]
         parsed = 0
+
+        resp = server.get(page)
+        tree = lxml.html.fromstring(resp.text)
+        tree = self.remove_marketing(tree)
+
+        foto_sel = CSSSelector(
+            '#component_2 > div > div > span > div._1kNOY9zw > div._2jF2URLh > span > a')
+        foto_list = foto_sel(tree)
+
+        for foto in foto_list:
+            a_elem = foto
+            href.append({
+                'link': base_url + a_elem.get('href'),
+                'parsed': parsed,
+                'cityID': city_id
+            })
+        return href
+
+    def start_get_urls(self, city, server):
+        city_id = city[0]
 
         pagination = self.get_pagination(server, city)
 
-        for page in tqdm.tqdm(pagination):
-            resp = server.get(page)
-            tree = lxml.html.fromstring(resp.text)
-            tree = self.remove_marketing(tree)
+        func = partial(self.get_urls, city_id)
 
-            foto_sel = CSSSelector(
-                '#component_2 > div > div > div.restaurants-list-ListCell__cellWrapper--1htQm > div.'
-                'restaurants-list-ListCell__photoWrapper--1umtU > span > a')
+        with Pool(20) as pool:
+            href = list(tqdm.tqdm(pool.imap(func, pagination)))
+        pool.close()
+        pool.join()
 
-            foto_list = foto_sel(tree)
-
-
-            for foto in foto_list:
-                a_elem = foto
-                href.append({
-                    'link': base_url + a_elem.get('href'),
-                    'parsed': parsed,
-                    'cityID': city_id
-                })
+        for len_num in href:
+            if len(len_num) == 0:
+                return None
 
         return href
-
-
-
-
-
-
-
