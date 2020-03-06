@@ -7,6 +7,8 @@ from db import *
 from RestaurantsParser import *
 from DataRestaurantsParser import *
 from Json import *
+from PhotoRestParser import *
+from DownloadPhotoOnPC import *
 
 
 
@@ -51,9 +53,95 @@ def pool_get_data_restaurants():
     pool.close()
     pool.join()
 
+def get_urls_photo_rest():
+    photo_rest_parser = PhotoRestParsed()
+    db = DB()
+    restaurants = db.get_all_restaurants_from_DB()
+    unparsed_rest = photo_rest_parser.get_unparsed_restaurants_url(restaurants)
+    driver = open_driver()
+
+    for restaurant in tqdm.tqdm(unparsed_rest):
+        photo_dict = photo_rest_parser.start_photo_parse(driver, restaurant)
+
+        for photo in photo_dict:
+            # print(photo)
+            parsed = photo['parsed']
+            if parsed == 2:
+                photo_wrine_is_none_photo = db.photo_restaurant_record_is_none(photo_dict)
+                break
+        if photo_dict is not None:
+            photo_write = db.photo_restaurant_record(photo_dict)
+
+def open_driver():
+    driver = webdriver.Firefox(executable_path=r'C:\driver\geckodriver.exe')
+    driver.set_window_size(1000, 550)
+
+    return driver
+
+def downlod_photo(unparsed_rest):
+    downlod_photo_on_pc = DownloadPhoto()
+    db = DB()
+    photo_dict = downlod_photo_on_pc.downlod_photo(unparsed_rest)
+
+    if photo_dict is not None:
+        photo_write = db.photo_path_restaurant_record(photo_dict)
+
+def pool_downlod_photo():
+    photo_rest_parser = DownloadPhoto()
+    db = DB()
+    restaurants = db.get_all_restaurants_from_DB()
+    unparsed_rest = photo_rest_parser.get_unparsed_photo(restaurants)
+
+    with Pool(10) as pool:
+        rest = list(tqdm.tqdm(pool.imap(downlod_photo, unparsed_rest)))
+    pool.close()
+    pool.join()
+    pass
+
 
 if __name__ == '__main__':
     server = Server()
     db = DB()
     # get_restaurants()
-    pool_get_data_restaurants()
+    # pool_get_data_restaurants()
+    # get_urls_photo_rest()
+    # downlod_photo()
+    pool_downlod_photo()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

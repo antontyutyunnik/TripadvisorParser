@@ -79,6 +79,7 @@ class DB:
                                 link VARCHAR(255),
                                 parsed BOOLEAN, 
                                 cityID INTEGER,
+                                photo_parsed INTEGER (5),
                                 FOREIGN KEY(cityID) REFERENCES cities(id) ) 
                                 """
         cursor.execute(sql)
@@ -90,7 +91,7 @@ class DB:
     def get_all_restaurants_from_DB(self):
         db = self.connect()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM Restaurants WHERE parsed = 1")
+        cursor.execute("SELECT * FROM Restaurants WHERE photo_parsed = 1")
         rows = cursor.fetchall()
 
         cursor.close()
@@ -225,16 +226,56 @@ class DB:
         db.close()
         return rows
 
+    def photo_restaurant_record(self, photo_dict):
+        self.createTablePhoto()
+        db = self.connect()
+        cursor = db.cursor()
+        try:
+            for photo in photo_dict:
+                parsed = photo['parsed']
+                if parsed == 2:
+                    break
+                else:
+                    cursor.execute("INSERT INTO Photo (restaurantID, photo_url, parsed"
+                                   ") VALUES(:restaurantID, :photo_url, :parsed)", photo)
+                    cursor.execute("UPDATE Restaurants SET photo_parsed = 1 WHERE id = :restaurantID", photo)
+            cursor.close()
+            db.commit()
+            db.close()
+            print('Add PHOTO from to DB')
+        except sqlite3.Error as e:
+            print(e)
+            db.rollback()
+            db.close()
+            print("Insert DB error")
 
-    def createTableFoto(self):
+    def photo_restaurant_record_is_none(self, photo_dict):
+        self.createTablePhoto()
+        db = self.connect()
+        cursor = db.cursor()
+        try:
+            for photo in photo_dict:
+                continue
+            cursor.execute("UPDATE Restaurants SET photo_parsed = 2 WHERE id = :restaurantID", photo)
+            cursor.close()
+            db.commit()
+            db.close()
+            print('Add PHOTO from to DB')
+        except sqlite3.Error as e:
+            print(e)
+            db.rollback()
+            db.close()
+            print("Insert DB error")
+
+    def createTablePhoto(self):
         db = self.connect()
         cursor = db.cursor()
         sql = """
-                                CREATE TABLE IF NOT EXISTS Foto(
+                                CREATE TABLE IF NOT EXISTS Photo(
                                 id       INTEGER       PRIMARY KEY AUTOINCREMENT
                                                        NOT NULL,
-                                nameFoto VARCHAR (255),
                                 restaurantID   INTEGER       REFERENCES DataRestaurants (id),
+                                photo_url VARCHAR (255),
                                 parsed VARCHAR (255))
                                 """
         cursor.execute(sql)
@@ -242,9 +283,57 @@ class DB:
         db.commit()
         db.close()
 
+    def get_all_photo_from_DB(self):
+        db = self.connect()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM Photo WHERE parsed = 0")
+        rows = cursor.fetchall()
+
+        cursor.close()
+        db.commit()
+        db.close()
+        return rows
+
+    def photo_path_restaurant_record(self, photo_dict):
+        self.createTableRelativePathPhoto()
+        db = self.connect()
+        cursor = db.cursor()
+        try:
+            for photo in photo_dict:
+                cursor.execute("INSERT INTO RelativePathPhoto (restaurantID, path"
+                               ") VALUES(:restaurantID, :path)", photo)
+            cursor.execute("UPDATE Photo SET parsed = 1 WHERE restaurantID = :restaurantID", photo)
+            cursor.execute("UPDATE Restaurants SET photo_parsed = 0 WHERE id = :restaurantID", photo)
+            cursor.close()
+            db.commit()
+            db.close()
+            print('Add PHOTO from to DB')
+        except sqlite3.Error as e:
+            print(e)
+            db.rollback()
+            db.close()
+            print("Insert DB error")
+
+    def createTableRelativePathPhoto(self):
+        db = self.connect()
+        cursor = db.cursor()
+        sql = """
+                                CREATE TABLE IF NOT EXISTS RelativePathPhoto(
+                                id       INTEGER       PRIMARY KEY AUTOINCREMENT
+                                                       NOT NULL,
+                                restaurantID   INTEGER       REFERENCES DataRestaurants (id),
+                                path VARCHAR (500))
+                                """
+        cursor.execute(sql)
+        cursor.close()
+        db.commit()
+        db.close()
+
+
+
     def is_many_rows(self, rows):
         if len(rows) > 1:
-            print("Error" + id + "Restorants has many IDs")
+            print("Error" + rows + "Restorants has many IDs")
             return
 
 
@@ -277,3 +366,65 @@ class DB:
         cursor.close()
 
         return rows[0][13]
+
+    def get_all_data_restaurants_from_DB_for_photo(self, restaurants):
+        list = []
+        db = self.connect()
+        for restaurant in restaurants:
+            id = restaurant[0]
+
+            cursor = db.cursor()
+            rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+            self.is_many_rows(rows)
+            list.append(rows[0][0][1])
+            cursor.close()
+        db.close()
+
+        return list
+
+    def get_country_from_db_data_rest(self, restaurant):
+        id = restaurant[0]
+        db = self.connect()
+        cursor = db.cursor()
+        rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+        self.is_many_rows(rows)
+        cursor.close()
+        db.close()
+
+        return rows[0][12]
+
+    def get_city_from_db_data_rest(self, restaurant):
+        id = restaurant[0]
+        db = self.connect()
+        cursor = db.cursor()
+        rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+        self.is_many_rows(rows)
+        cursor.close()
+        db.close()
+
+        return rows[0][10]
+
+    def get_rest_name_from_db_data_rest(self, restaurant):
+        id = restaurant[0]
+        db = self.connect()
+        cursor = db.cursor()
+        rows = cursor.execute("SELECT * FROM DataRestaurants WHERE restaurantID = " + str(id)).fetchall()
+        self.is_many_rows(rows)
+        cursor.close()
+        db.close()
+
+        return rows[0][1]
+
+    def get_photo_urls_from_db_data_rest(self, restaurant):
+        list = []
+        id = restaurant[0]
+        db = self.connect()
+        cursor = db.cursor()
+        rows = cursor.execute("SELECT * FROM Photo WHERE restaurantID = " + str(id)).fetchall()
+        for urls in rows:
+            url = urls[2]
+            list.append(url)
+        cursor.close()
+        db.close()
+
+        return list
